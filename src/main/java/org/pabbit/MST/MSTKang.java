@@ -1,6 +1,8 @@
 package org.pabbit.MST;
 
 import edu.emory.mathcs.cs323.graph.span.*;
+import edu.emory.mathcs.cs323.graph.Edge;
+import edu.emory.mathcs.cs323.graph.Graph;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -12,11 +14,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.regex.Pattern;
-
-import edu.emory.mathcs.cs323.graph.Edge;
-import edu.emory.mathcs.cs323.graph.Graph;
 
 public class MSTKang 
 {
@@ -50,10 +48,10 @@ public class MSTKang
 		
 		distance = new float[words.size()][words.size()];
 
-		for(int i = 1; i < distance.length; i++)
-			for(int j = 0; j < i; j++)
+		for(int i = 0; i < distance.length-1; i++)
+			for(int j = i+1; j < distance.length; j++)
 			{
-				distance[i][j] = getEuclideanDistance(vectors.get(i), vectors.get(j));
+				distance[i][j] = getCosineDistance(vectors.get(i), vectors.get(j));
 				distance[j][i] = distance[i][j];
 			}
 		
@@ -62,24 +60,15 @@ public class MSTKang
 	
 	public SpanningTree findMinimumSpanningTree()
 	{
-		SpanningTree tree = new SpanningTree();
-		
-		// TODO: This code produces a dummy graph
-		Random rand = new Random();
 		int size = words.size();
-		
-		for (int source=0; source<size; source++)
-		{
-			int target = 0;
-			
-			while (true)
-			{
-				target = rand.nextInt(size);
-				if (target != source) break;
-			}
-			
-			tree.addEdge(new Edge(source, target, rand.nextFloat()));
-		}
+		Graph graph = new Graph(size);
+		MSTAlgorithm prim = new MSTPrim();
+
+		for(int i = 0; i < size-1; i++)
+			for(int j = i+1; j < size; j++)
+				graph.setUndirectedEdge(i, j, distance[i][j]);
+
+		SpanningTree tree = prim.getMinimumSpanningTree(graph);
 		
 		return tree;
 	}
@@ -90,17 +79,28 @@ public class MSTKang
 		
 		for(int i = 0; i < v1.length; i++)
 		{
-			total += (float) Math.pow(v1[i]-v2[i], 2);
+			total += Math.pow(v1[i]-v2[i], 2);
 		}
 		
 		total = (float) Math.sqrt(total);
+		
 		return total;
 	}
 	
 	public float getCosineDistance(float[] v1, float[] v2)
 	{
-		// TODO:
-		return 0;
+		float length1 = 0, length2 = 0, total = 0;
+		
+		for(int i = 0; i < v1.length; i++)
+		{
+			total += v1[i]*v2[i];
+			length1 += Math.pow(v1[i], 2);
+			length2 += Math.pow(v2[i], 2);
+		}
+		
+		total = (float) (1 - (total/ (Math.sqrt(length1) * Math.sqrt(length2))));
+		
+		return total;
 	}
 	
 	public void printSpanningTree(OutputStream out, SpanningTree tree)
@@ -117,14 +117,14 @@ public class MSTKang
 	
 	static public void main(String[] args) throws Exception
 	{
-		final String INPUT_FILE  = "./src/graph/span/word_vectors.txt";
-		final String OUTPUT_FILE = "./src/graph/span/word_vectors.dot";
+		final String INPUT_FILE  = "../MST/src/main/java/word_vectors.txt";
+		final String OUTPUT_FILE = "../MST/src/main/java/word_vectors_C.dot";
 		
 		MSTKang mst = new MSTKang();
 		
 		mst.readVectors(new FileInputStream(INPUT_FILE));
 		SpanningTree tree = mst.findMinimumSpanningTree();
 		mst.printSpanningTree(new FileOutputStream(OUTPUT_FILE), tree);
-		System.out.println(tree.getTotalWeight());
+		System.out.println(tree.getTotalWeight());		
 	}
 }
